@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrendSniper — Viral Trend Predictor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #090b10;
+      --bg2:      #111318;
+      --bg3:      #161a24;
+      --border:   #1e2433;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --accent:   #3b82f6;
+      --green:    #22c55e;
+      --red:      #ef4444;
+      --amber:    #f59e0b;
+      --purple:   #a855f7;
+      --mono:     'Space Mono', monospace;
+      --sans:     'Syne', sans-serif;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Layout ── */
+    .wrapper { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-icon {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .logo-name {
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .logo-name span { color: var(--accent); }
+    .logo-sub {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      letter-spacing: 1px;
+    }
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+    .live-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: blink 1.6s infinite;
+      display: inline-block;
+      margin-right: 5px;
+    }
+    @keyframes blink {
+      0%,100% { opacity:1; } 50% { opacity:0.3; }
+    }
+    #statusText { color: var(--muted); }
+
+    /* ── Ticker ── */
+    .ticker-wrap {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 16px;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      overflow: hidden;
+    }
+    .ticker-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 2px;
+      white-space: nowrap;
+    }
+    .ticker-track { flex:1; overflow:hidden; white-space:nowrap; }
+    .ticker-inner {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+      animation: ticker 35s linear infinite;
+    }
+    @keyframes ticker {
+      0% { transform:translateX(0); }
+      100% { transform:translateX(-50%); }
+    }
+
+    /* ── Metric Cards ── */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 2rem;
+    }
+    .metric-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      text-align: center;
+    }
+    .metric-val {
+      font-size: 2rem;
+      font-weight: 800;
+      font-family: var(--mono);
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .metric-lbl {
+      font-size: 0.68rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* ── Alert Box ── */
+    .alerts-section {
+      background: #120f00;
+      border: 1px solid #3a2a00;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .alerts-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--amber);
+      margin-bottom: 1rem;
+    }
+    .alert-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #1e1800;
+      font-size: 0.83rem;
+    }
+    .alert-item:last-child { border-bottom: none; }
+    .alert-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .dot-red    { background: var(--red); }
+    .dot-amber  { background: var(--amber); }
+    .dot-blue   { background: var(--accent); }
+    .alert-topic { color: var(--text); font-weight: 700; }
+    .alert-msg  { color: var(--muted); }
+
+    /* ── Main 2-col grid ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 2rem;
+    }
+    @media (max-width: 720px) { .main-grid { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+    }
+    .panel-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .badge {
+      font-size: 0.62rem;
+      font-family: var(--mono);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .badge-blue   { background:#1e3a5f; color:#60a5fa; }
+    .badge-amber  { background:#3a2a00; color:#fbbf24; }
+    .badge-red    { background:#3b0f0f; color:#fca5a5; }
+    .badge-green  { background:#052e16; color:#4ade80; }
+
+    /* Trend rows */
+    .trend-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+      border-radius: 6px;
+    }
+    .trend-row:last-child { border-bottom: none; }
+    .trend-row:hover { background: var(--bg3); padding-left: 8px; }
+    .trend-rank { font-family:var(--mono); font-size:0.72rem; color:var(--muted); min-width:22px; }
+    .trend-info { flex:1; min-width:0; }
+    .trend-name {
+      font-size: 0.88rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .trend-sub { font-size:0.7rem; color:var(--muted); font-family:var(--mono); margin-top:2px; }
+    .trend-vel { font-family:var(--mono); font-size:0.83rem; font-weight:700; }
+
+    /* Predict rows */
+    .predict-row { padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .predict-row:last-child { border-bottom: none; }
+    .predict-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+    .predict-name { font-size:0.85rem; font-weight:600; }
+    .predict-pct { font-family:var(--mono); font-size:0.9rem; font-weight:700; }
+    .bar-track { height:5px; background:var(--bg3); border-radius:3px; overflow:hidden; }
+    .bar-fill  { height:100%; border-radius:3px; transition: width 0.8s ease; }
+    .predict-eta { font-size:0.68rem; color:var(--muted); font-family:var(--mono); margin-top:4px; }
+
+    /* ── Chart panels ── */
+    .chart-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .chart-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 1.25rem;
+    }
+    .chip {
+      font-size: 0.75rem;
+      padding: 4px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: var(--sans);
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+    .chip.active, .chip:hover {
+      background: #1e3a5f;
+      color: #60a5fa;
+      border-color: transparent;
+    }
+    .chart-box { position:relative; width:100%; height:260px; }
+
+    /* ── Compare ── */
+    .compare-selects {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 1.25rem;
+    }
+    .select-group label {
+      display: block;
+      font-size: 0.68rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+    .compare-selects select {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 0.83rem;
+    }
+    .verdict {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      font-size: 0.85rem;
+      text-align: center;
+      margin-top: 1rem;
+      color: var(--muted);
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .verdict strong { color: var(--green); }
+
+    /* ── Category filter bar ── */
+    .cat-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Skeleton loader ── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg2) 25%, var(--bg3) 50%, var(--bg2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+      height: 18px;
+      margin-bottom: 10px;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--muted);
+      padding: 2rem 0 1rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+
+    /* ── Loading overlay ── */
+    #loadingOverlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      gap: 16px;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loadingOverlay p { font-family:var(--mono); font-size:0.78rem; color:var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <p>Connecting to TrendSniper API...</p>
+</div>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🎯</div>
+      <div>
+        <div class="logo-name">Trend<span>Sniper</span></div>
+        <div class="logo-sub">REAL-TIME VIRAL PREDICTION ENGINE</div>
+      </div>
+    </div>
+    <div class="status-bar">
+      <div><span class="live-dot"></span><span style="color:var(--green)">LIVE</span></div>
+      <div id="statusText">Connecting...</div>
+      <div id="countdown" style="color:var(--muted)"></div>
+    </div>
+  </div>
+
+  <!-- Ticker -->
+  <div class="ticker-wrap">
+    <div class="ticker-label">SIGNAL FEED</div>
+    <div class="ticker-track">
+      <div class="ticker-inner" id="tickerInner">Scanning trends...</div>
+    </div>
+  </div>
+
+  <!-- Category filter -->
+  <div class="cat-bar" id="catBar">
+    <button class="chip active" data-cat="all">All</button>
+    <button class="chip" data-cat="tech">Tech</button>
+    <button class="chip" data-cat="news">News</button>
+    <button class="chip" data-cat="sports">Sports</button>
+    <button class="chip" data-cat="entertainment">Entertainment</button>
+    <button class="chip" data-cat="music">Music</button>
+    <button class="chip" data-cat="finance">Finance</button>
+    <button class="chip" data-cat="education">Education</button>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics">
+    <div class="metric-card">
+      <div class="metric-val" id="mTotal">—</div>
+      <div class="metric-lbl">Topics Tracked</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" id="mRising">—</div>
+      <div class="metric-lbl">Rising Fast ≥70%</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" id="mViral">—</div>
+      <div class="metric-lbl">Viral Alert ≥85%</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" id="mTop">—</div>
+      <div class="metric-lbl">Top Predicted</div>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div class="alerts-section">
+    <div class="alerts-title">⚡ PREDICTIVE ALERTS</div>
+    <div id="alertList"><div class="skeleton"></div><div class="skeleton" style="width:75%"></div></div>
+  </div>
+
+  <!-- Trends + Predictions -->
+  <div class="main-grid">
+    <div class="panel">
+      <div class="panel-title">CURRENT TRENDS <span class="badge badge-blue">LIVE</span></div>
+      <div id="trendList"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton" style="width:80%"></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">VIRAL PROBABILITY <span class="badge badge-amber">6–12h WINDOW</span></div>
+      <div id="predictList"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton" style="width:80%"></div></div>
+    </div>
+  </div>
+
+  <!-- Growth Chart -->
+  <div class="chart-panel">
+    <div class="panel-title">📈 TOPIC GROWTH — 12 HOUR HISTORY</div>
+    <div class="chart-filters" id="growthChips"></div>
+    <div class="chart-box">
+      <canvas id="growthChart" role="img" aria-label="Line chart showing topic mention growth over 12 hours"></canvas>
+    </div>
+  </div>
+
+  <!-- Compare -->
+  <div class="chart-panel">
+    <div class="panel-title">⚔️ COMPARE TOPICS — WHICH WILL WIN?</div>
+    <div class="compare-selects">
+      <div class="select-group">
+        <label>TOPIC A</label>
+        <select id="cmpA"></select>
+      </div>
+      <div class="select-group">
+        <label>TOPIC B</label>
+        <select id="cmpB"></select>
+      </div>
+    </div>
+    <div class="chart-box" style="height:200px;">
+      <canvas id="cmpChart" role="img" aria-label="Comparison chart between two topics"></canvas>
+    </div>
+    <div class="verdict" id="verdict">Select two topics to see the prediction verdict</div>
+  </div>
+
+  <div class="footer">
+    TrendSniper &bull; Flask + scikit-learn + Chart.js &bull;
+    Data: Google Trends RSS &bull;
+    <span id="footerTime"></span>
+  </div>
+</div>
+
+<script>
+// ─── Config ───────────────────────────────────────────────────────────────────
+const API_BASE     = "";          // same origin — Flask serves this file
+const REFRESH_MS   = 60000;       // refresh every 60 seconds
+const CHART_COLORS = [
+  "#3b82f6","#a855f7","#f59e0b","#ef4444",
+  "#22c55e","#ec4899","#14b8a6","#f97316",
+  "#6366f1","#84cc16","#0ea5e9","#e879f9",
+];
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let allTopics      = [];
+let activeCategory = "all";
+let activeChips    = new Set();
+let growthChart, cmpChart;
+let countdownVal   = REFRESH_MS / 1000;
+let countdownTimer;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const scoreColor = s => s >= 80 ? "#ef4444" : s >= 60 ? "#f59e0b" : "#3b82f6";
+const fmt        = n => n >= 1000000 ? (n/1000000).toFixed(1)+"M"
+                      : n >= 1000    ? (n/1000).toFixed(0)+"K"
+                      : n;
+
+function filteredTopics() {
+  if (activeCategory === "all") return allTopics;
+  return allTopics.filter(t => t.category === activeCategory);
+}
+
+// ─── Fetch from Flask API ────────────────────────────────────────────────────
+async function fetchTrends() {
+  try {
+    const res  = await fetch(`${API_BASE}/api/trends`);
+    if (!res.ok) throw new Error("API error " + res.status);
+    const data = await res.json();
+    return data;
+  } catch (e) {
+    console.error("Fetch failed:", e);
+    document.getElementById("statusText").textContent = "⚠ API unreachable — retrying...";
+    return null;
+  }
+}
+
+// ─── Render ticker ────────────────────────────────────────────────────────────
+function renderTicker(topics) {
+  const text = topics.map(t =>
+    `${t.topic}  •  ${fmt(t.mentions)} mentions  •  ${t.score}% viral  •  ${t.category.toUpperCase()}`
+  ).join("     ///     ");
+  document.getElementById("tickerInner").textContent = text + "     ///     " + text;
+}
+
+// ─── Render metrics ───────────────────────────────────────────────────────────
+function renderMetrics(topics) {
+  document.getElementById("mTotal").textContent  = topics.length;
+  document.getElementById("mRising").textContent = topics.filter(t => t.score >= 70).length;
+  document.getElementById("mViral").textContent  = topics.filter(t => t.score >= 85).length;
+  const top = topics[0];
+  document.getElementById("mTop").textContent    = top ? top.score + "%" : "—";
+}
+
+// ─── Render alerts ────────────────────────────────────────────────────────────
+function renderAlerts(topics) {
+  const hot = topics.filter(t => t.score >= 70).slice(0, 4);
+  if (!hot.length) {
+    document.getElementById("alertList").innerHTML =
+      `<div style="color:var(--muted);font-size:0.8rem;">No active alerts right now.</div>`;
+    return;
+  }
+  document.getElementById("alertList").innerHTML = hot.map(t => {
+    const dotClass = t.score >= 85 ? "dot-red" : t.score >= 70 ? "dot-amber" : "dot-blue";
+    const tag      = t.score >= 85 ? "🔴 VIRAL ALERT" : "🟡 RISING FAST";
+    const msg      = t.score >= 85
+      ? `Mention velocity +${t.velocity_pct}% — likely viral ${t.eta}`
+      : `Cross-platform surge detected — ${t.cross_pct}% signal strength`;
+    return `
+      <div class="alert-item">
+        <div class="alert-dot ${dotClass}"></div>
+        <div>
+          <span class="alert-topic">${tag} · ${t.topic}</span>
+          <span class="alert-msg"> — ${msg}</span>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+// ─── Render trend list ────────────────────────────────────────────────────────
+function renderTrends(topics) {
+  document.getElementById("trendList").innerHTML = topics.slice(0, 10).map((t, i) => `
+    <div class="trend-row">
+      <div class="trend-rank">#${i+1}</div>
+      <div class="trend-info">
+        <div class="trend-name">${t.topic}</div>
+        <div class="trend-sub">${fmt(t.mentions)} mentions · ${t.source}</div>
+      </div>
+      <div class="trend-vel" style="color:${scoreColor(t.score)}">+${t.velocity_pct}%</div>
+    </div>`).join("");
+}
+
+// ─── Render predictions ───────────────────────────────────────────────────────
+function renderPredictions(topics) {
+  document.getElementById("predictList").innerHTML = topics.slice(0, 8).map(t => `
+    <div class="predict-row">
+      <div class="predict-top">
+        <div class="predict-name">${t.topic}</div>
+        <div class="predict-pct" style="color:${scoreColor(t.score)}">${t.score}%</div>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${t.score}%;background:${scoreColor(t.score)};"></div>
+      </div>
+      <div class="predict-eta">ETA ${t.eta} · ${t.category}</div>
+    </div>`).join("");
+}
+
+// ─── Growth chart ─────────────────────────────────────────────────────────────
+function buildChips(topics) {
+  const el = document.getElementById("growthChips");
+  el.innerHTML = "";
+  topics.slice(0, 6).forEach((t, i) => {
+    if (i < 3) activeChips.add(t.topic);
+    const btn = document.createElement("button");
+    btn.className = "chip" + (activeChips.has(t.topic) ? " active" : "");
+    btn.textContent = t.topic;
+    btn.onclick = () => {
+      if (activeChips.has(t.topic)) activeChips.delete(t.topic);
+      else activeChips.add(t.topic);
+      btn.classList.toggle("active");
+      renderGrowthChart(topics);
+    };
+    el.appendChild(btn);
+  });
+}
+
+function renderGrowthChart(topics) {
+  const visible = topics.filter(t => activeChips.has(t.topic));
+  const labels  = visible[0]?.history?.times || [];
+
+  const datasets = visible.map((t, i) => ({
+    label:           t.topic,
+    data:            t.history.values,
+    borderColor:     CHART_COLORS[i % CHART_COLORS.length],
+    backgroundColor: CHART_COLORS[i % CHART_COLORS.length] + "18",
+    borderWidth:     2,
+    tension:         0.4,
+    fill:            true,
+    pointRadius:     2,
+  }));
+
+  if (growthChart) growthChart.destroy();
+  growthChart = new Chart(document.getElementById("growthChart"), {
+    type: "line",
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { mode: "index", intersect: false },
+      },
+      scales: {
+        x: {
+          ticks: { color: "#64748b", font: { size: 10, family: "Space Mono" } },
+          grid:  { color: "rgba(255,255,255,0.04)" },
+        },
+        y: {
+          ticks: {
+            color: "#64748b", font: { size: 10 },
+            callback: v => v >= 1000 ? (v/1000).toFixed(0)+"K" : v,
+          },
+          grid: { color: "rgba(255,255,255,0.04)" },
+        },
+      },
+    },
+  });
+}
+
+// ─── Compare chart ────────────────────────────────────────────────────────────
+function populateSelects(topics) {
+  ["cmpA","cmpB"].forEach((id, idx) => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = topics.map((t,i) =>
+      `<option value="${i}" ${i===idx?"selected":""}>${t.topic}</option>`
+    ).join("");
+  });
+  document.getElementById("cmpA").addEventListener("change", () => renderCmpChart(topics));
+  document.getElementById("cmpB").addEventListener("change", () => renderCmpChart(topics));
+  renderCmpChart(topics);
+}
+
+function renderCmpChart(topics) {
+  const a   = topics[+document.getElementById("cmpA").value];
+  const b   = topics[+document.getElementById("cmpB").value];
+  if (!a || !b) return;
+
+  const labels = a.history.times;
+  if (cmpChart) cmpChart.destroy();
+  cmpChart = new Chart(document.getElementById("cmpChart"), {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        { label: a.topic, data: a.history.values, borderColor: "#3b82f6", borderWidth:2, tension:0.4, pointRadius:2, fill:false },
+        { label: b.topic, data: b.history.values, borderColor: "#f59e0b", borderWidth:2, tension:0.4, pointRadius:2, fill:false, borderDash:[5,3] },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: "#94a3b8", font:{ size:11 }, boxWidth:12, padding:16 },
+        },
+      },
+      scales: {
+        x: { ticks:{ color:"#64748b", font:{ size:10, family:"Space Mono" }}, grid:{ color:"rgba(255,255,255,0.04)" }},
+        y: {
+          ticks:{ color:"#64748b", font:{size:10}, callback: v => v>=1000?(v/1000).toFixed(0)+"K":v },
+          grid:{ color:"rgba(255,255,255,0.04)" },
+        },
+      },
+    },
+  });
+
+  // Verdict
+  const winner = a.score >= b.score ? a : b;
+  const loser  = a.score >= b.score ? b : a;
+  document.getElementById("verdict").innerHTML =
+    `🏆 <strong>${winner.topic}</strong> is predicted to go viral first &nbsp;·&nbsp;
+     Score: <strong style="color:${scoreColor(winner.score)}">${winner.score}%</strong>
+     vs <span style="color:var(--muted)">${loser.score}%</span>
+     &nbsp;·&nbsp; ETA <strong>${winner.eta}</strong>`;
+}
+
+// ─── Category filter ──────────────────────────────────────────────────────────
+document.getElementById("catBar").addEventListener("click", e => {
+  const btn = e.target.closest(".chip");
+  if (!btn) return;
+  document.querySelectorAll("#catBar .chip").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  activeCategory = btn.dataset.cat;
+  const filtered = filteredTopics();
+  renderTrends(filtered);
+  renderPredictions(filtered);
+  renderAlerts(filtered);
+});
+
+// ─── Countdown timer ──────────────────────────────────────────────────────────
+function startCountdown() {
+  clearInterval(countdownTimer);
+  countdownVal = REFRESH_MS / 1000;
+  countdownTimer = setInterval(() => {
+    countdownVal--;
+    document.getElementById("countdown").textContent = `Next refresh in ${countdownVal}s`;
+    if (countdownVal <= 0) clearInterval(countdownTimer);
+  }, 1000);
+}
+
+// ─── Main render ──────────────────────────────────────────────────────────────
+async function renderAll() {
+  const data = await fetchTrends();
+  if (!data) return;
+
+  allTopics = data.topics;
+  const filtered = filteredTopics();
+
+  document.getElementById("statusText").textContent =
+    `Last scan: ${data.timestamp} · ${data.total} topics`;
+  document.getElementById("footerTime").textContent =
+    new Date().toLocaleString("en-IN", { dateStyle:"medium", timeStyle:"short" });
+
+  renderTicker(allTopics);
+  renderMetrics(filtered);
+  renderAlerts(filtered);
+  renderTrends(filtered);
+  renderPredictions(filtered);
+
+  // Only rebuild chips + selects on first load or topic count change
+  if (document.getElementById("growthChips").children.length === 0) {
+    buildChips(allTopics);
+    populateSelects(allTopics);
+  }
+  renderGrowthChart(allTopics);
+
+  // Hide loader
+  document.getElementById("loadingOverlay").style.display = "none";
+  startCountdown();
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+renderAll();
+setInterval(renderAll, REFRESH_MS);
+</script>
+</body>
+</html>
