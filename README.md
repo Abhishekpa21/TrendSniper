@@ -7,22 +7,6 @@ trendsniper/
 ├── dashboard.html   ← Frontend (auto-fetches from Flask)
 ├── requirements.txt ← Dependencies
 └── README.md
-```a
-
-## How to Run
-
-```bash
-# Step 1 — Install dependencies
-pip install -r requirements.txt
-
-# Step 2 — Start the server
-python app.py
-
-# Step 3 — Open browser
-# Go to: http://localhost:5000
-```
-
-That's it. Flask serves dashboard.html AND the /api/trends data.
 
 ## API Endpoints
 
@@ -54,9 +38,5 @@ Auto-refreshes every 60 seconds
 - **Data**: Google Trends RSS (free, no API key needed)
 - **ML Model**: Linear Regression + feature engineering
 
-## CV Description
-**TrendSniper — Full-Stack Real-Time Trend Prediction System**
-- Built REST API backend with Flask serving live trend predictions
-- Engineered ML scoring model (velocity + cross-platform + acceleration features)
-- Designed responsive dashboard with real-time Chart.js visualizations
-- Integrated Google Trends RSS data pipeline with auto-refresh
+## PROJECT LINK
+https://trendsniper-jw64.onrender.com/
