@@ -18,7 +18,6 @@ trendsniper/
 
 ## How It's Connected
 
-```
 Browser opens http://localhost:5000
        ↓
 Flask serves dashboard.html
